@@ -4,8 +4,6 @@ import java.util.Arrays;
  
 /*
  * recursive backtracking algorithm
- * shamelessly borrowed from the ruby at
- * http://weblog.jamisbuck.org/2010/12/27/maze-generation-recursive-backtracking
  */
 public class MazeGenerator {
 	private final int x;
@@ -24,6 +22,7 @@ public class MazeGenerator {
 		generateMaze(0, 0);
 	}
  
+// Replace this method with a graphical view. 
 	public void display() {
 		for (int i = 0; i < y; i++) {
 			// draw the north edge
