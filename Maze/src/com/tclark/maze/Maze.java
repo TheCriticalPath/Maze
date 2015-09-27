@@ -252,11 +252,11 @@ public class Maze extends JPanel implements Runnable{
 			g.setColor(Color.GREEN);	
 			g.fill3DRect(((_startCell.x*this._cellWidth)+this._borderX)+_cellWidth/4,
 					((_startCell.y*this._cellHeight)+this._borderY)+_cellHeight/4,
-					_cellWidth/2, _cellHeight/2, true);			
+					_cellWidth/2, _cellHeight/2, false);			
 			g.setColor(Color.RED);	
 			g.fill3DRect(((_endCell.x*this._cellWidth)+this._borderX)+_cellWidth/4,
 					((_endCell.y*this._cellHeight)+this._borderY)+_cellHeight/4,
-					_cellWidth/2, _cellHeight/2, true);			}
+					_cellWidth/2, _cellHeight/2, false);			}
 
 	}
 	/**
@@ -497,7 +497,6 @@ public class Maze extends JPanel implements Runnable{
 	 */
 	public void run(){
 		generate();
-		Random r = new Random();
 		_startCell = new Point(1,1);
 		_endCell = getEndPoint();
 		repaint();
