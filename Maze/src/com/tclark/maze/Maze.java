@@ -4,10 +4,9 @@ import java.awt.Graphics;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Base64;
 import java.util.Stack;
 import javax.swing.JPanel;
-import java.util.List;
-import java.util.Random;
 
 @SuppressWarnings("serial")
 public class Maze extends JPanel implements Runnable{
@@ -16,23 +15,23 @@ public class Maze extends JPanel implements Runnable{
 	 * This simplifies the creation of the maze.  Because we want to maintain a "visit" count for standard cells
 	 * We need a default visit count for the border cells.
 	 */
-	private final static int BORDER_VISITED = 99;
+	private final static int BORDER_VISITED = 16;
 	/** 
 	 * Value representing the North or Up direction
 	 */
-	private final static int NORTH = 0;
+	private final static int NORTH = 1;
 	/** 
 	 * Value representing the East or Right direction
 	 */
-	private final static int EAST = 1;
+	private final static int EAST = 2;
 	/** 
 	 * Value representing the South or Down direction
 	 */
-	private final static int SOUTH = 2;
+	private final static int SOUTH = 4;
 	/** 
 	 * Value representing the West or Left direction
 	 */
-	private final static int WEST = 3;
+	private final static int WEST = 8;
 	/**
 	 * 
 	 */
@@ -63,6 +62,12 @@ public class Maze extends JPanel implements Runnable{
 	 * A Last In, First Out storage of the cells visited in a given path
 	 */
 	private Stack<Position> _stkCells;
+	public int get_cellHeight() {
+		return _cellHeight;
+	}
+	public int get_cellWidth() {
+		return _cellWidth;
+	}
 	/**
 	 * The height of a square in pixels for graphical display
 	 */
@@ -75,6 +80,12 @@ public class Maze extends JPanel implements Runnable{
 	 * The amount of white space on the left and right side of the maze in pixels
 	 */
 	private int _borderX = 10;
+	public int get_borderY() {
+		return _borderY;
+	}
+	public int get_borderX( ) {
+		return _borderX;
+	}
 	/**
 	 * The amount of white space on the top and bottom of the maze in pixels
 	 */
@@ -121,6 +132,12 @@ public class Maze extends JPanel implements Runnable{
 	 * of times the cell has been visited.
 	 */
 	private int[][] _visitCount;
+	public int get_visitCount(int x,int y) {
+		return _visitCount[x][y];
+	}
+	public void increment_visitCount(int x, int y) {
+		this._visitCount[x][y]++;
+	}
 	/**
 	 * This is a 2-Dimensional array.  Each x,y position in the array will hold a true/false 
 	 * value indicating if the cell has been visited.
@@ -131,6 +148,41 @@ public class Maze extends JPanel implements Runnable{
 	 */
 	private java.util.List<TaskListener> listeners = Collections.synchronizedList( new ArrayList<TaskListener>() );
 
+	public String get_MazeString(){
+		StringBuilder sb = new StringBuilder();
+		Integer cell = 0;
+		for(int x = 0; x < _numColumns+2; x++){
+			for(int y = 0; y < _numRows+2;y++){
+				if(this._northWalls[x][y]){
+					cell += NORTH;
+				}
+				if(this._eastWalls[x][y]){
+					cell += EAST;
+				}
+				if(this._southWalls[x][y]){
+					cell += SOUTH;
+				}
+				if(this._westWalls[x][y]){
+					cell += WEST;
+				}
+				if (y < _numColumns + 1){
+					sb.append(cell.toString());
+				}
+			}
+			if ( x < _numColumns + 1){
+				sb.append('.');
+			}
+		}
+		Base64.Encoder e = Base64.getEncoder();
+		return e.encodeToString(sb.toString().getBytes());
+	}
+
+	public int get_numColumns() {
+		return _numColumns;
+	}
+	public int get_numRows() {
+		return _numRows;
+	}
 	/**
 	 * Adds a listener to this object. 
 	 * @param listener Adds a new listener to this object. 
@@ -272,6 +324,7 @@ public class Maze extends JPanel implements Runnable{
 		Collections.shuffle(al);
 		return al;
 	}
+	
 	/**
 	 * Build the maze
 	 */
@@ -352,7 +405,7 @@ public class Maze extends JPanel implements Runnable{
 						_southWalls[x][y] = false;      
 						//Knock down North Wall of South Neighbor cell
 						_northWalls[x][y+1] = false;    
-						//Remove move the direction from the list.  We have already been South so 
+						//Remove the direction from the list.  We have already been South so 
 						//we won't need to try it again. 
 						directionList.remove((Integer)i);
 						//If this position has more directions that it can go, put it back on the stack.
@@ -408,6 +461,15 @@ public class Maze extends JPanel implements Runnable{
 	private void initialize(){
 		initializeBorder();
 		initializeWalls();
+		initializeVisitCount();
+	}
+	public void initializeVisitCount(){
+		_visitCount = new int[_numColumns+2][_numRows+2];
+		for(int x = 0; x < _numColumns+2;x++){
+			for(int y = 0; y < _numRows+2;y++){
+				_visitCount[x][y] = 0;
+			}
+		}		
 	}
 	/**
 	 * Walls will be set for the maze and the extra rows and columns in the border.
@@ -423,6 +485,7 @@ public class Maze extends JPanel implements Runnable{
 				_southWalls[x][y] = true;
 				_eastWalls[x][y] = true;
 				_westWalls[x][y] = true;
+
 			}
 		}
 

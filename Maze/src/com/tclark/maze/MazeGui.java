@@ -4,17 +4,16 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import com.tclark.maze.*;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 @SuppressWarnings("serial")
 public class MazeGui extends JFrame implements ActionListener, TaskListener{
 	private static final Dimension DEFAULT_WINDOW_SIZE = new Dimension(800,600);
 	private static final Dimension MINIMUM_WINDOW_SIZE = new Dimension(400,300);
+	
+	private JLayeredPane _layeredPane = new JLayeredPane();
 	
 	private JMenuBar _mbMenu;
 	private JMenu _mFile;
@@ -35,6 +34,7 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 	private final String FILEEXT = "png";
 	
 	private Maze _Maze;
+	MazeSolver _MazeSolver; 
 	private Thread _thMaze;
 	/**
 	 * @param args
@@ -48,6 +48,7 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 		maze.setLocation((Toolkit.getDefaultToolkit().getScreenSize().width-maze.getWidth())/2,
 				         (Toolkit.getDefaultToolkit().getScreenSize().height-maze.getHeight())/2);
 		maze.setVisible(true);
+		
 	}
 	public MazeGui(){
 		_mbMenu = new JMenuBar();
@@ -93,12 +94,16 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 		_miHelpAbout = new JMenuItem("About");
 		_miHelpAbout.addActionListener(this);
 		_mHelp.add(_miHelpAbout);
+		
 		_Maze = new Maze();
+		_MazeSolver = new MazeSolver(_Maze);
 		add(_Maze);
+		
 	}
 	public void setMazeRunning(boolean isRunning){
 		if(isRunning){
 			_Maze.resetMaze(this._iColumns, this._iRows);
+			_MazeSolver.reset();
 			_miGameRun.setEnabled(false);
 			_miGameStop.setEnabled(true);
 			_Maze.setRunning(true);
@@ -110,6 +115,7 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 			_miGameRun.setEnabled(true);
 			_miGameStop.setEnabled(false);
 			_Maze.setRunning(false);
+			_Maze.removeListener(this);
 			_thMaze.interrupt();
 		}
 	}
@@ -207,8 +213,10 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 					lcv++;
 				    out = new File(String.format("%s\\%s_%d.%s", new Object[]{this.FILEPATH, this.FILENAME,lcv,this.FILEEXT}));
 				}
-					
 				ImageIO.write(bi, "png",out);
+				
+				out = new File(String.format("%s\\%s_%d.%s", new Object[]{this.FILEPATH, this.FILENAME,lcv,"txt"}));
+				Files.write(out.toPath(), _Maze.get_MazeString().getBytes(),StandardOpenOption.CREATE);
 			} catch (IOException e) {
 				
 				e.printStackTrace();
@@ -221,6 +229,18 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 		_miGameRun.setEnabled(true);
 		_miGameStop.setEnabled(false);
 		_Maze.setRunning(false);
+		//add(_Maze);
+		_MazeSolver = new MazeSolver(_Maze);
+		_layeredPane = this.getLayeredPane();
+		_layeredPane.setPreferredSize(MazeGui.DEFAULT_WINDOW_SIZE);
+		_layeredPane.setOpaque(false);
+		_layeredPane.add(_MazeSolver,new Integer(1));
+		_layeredPane.setVisible(true);
+		_MazeSolver.setOpaque(false);
+		_MazeSolver.setVisible(true);
+		_MazeSolver.setBounds(0,0,(int)this.getWidth(),(int)this.getHeight());
+		Thread t = new Thread(_MazeSolver);
+		t.start();
 		
 	}
 }
