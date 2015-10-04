@@ -2,6 +2,7 @@ package com.tclark.maze;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Base64;
@@ -76,10 +77,16 @@ public class Maze extends JPanel implements Runnable{
 	 * The width of a cell in pixels for graphical display
 	 */
 	private int _cellWidth;
+	byte[] _encodedMazeBytes;
+	byte[] _decodedMazeBytes;
+	public void set_encodedMazeBytes(byte[] encodedMazeBytes){
+		_encodedMazeBytes = encodedMazeBytes;
+	}
 	/**
 	 * The amount of white space on the left and right side of the maze in pixels
 	 */
 	private int _borderX = 10;
+	
 	public int get_borderY() {
 		return _borderY;
 	}
@@ -129,6 +136,7 @@ public class Maze extends JPanel implements Runnable{
 	private boolean[][] _westWalls;
 	/**
 	 * This is a 2-Dimensional array.  Each x,y position in the array will hold the number
+
 	 * of times the cell has been visited.
 	 */
 	private int[][] _visitCount;
@@ -153,6 +161,13 @@ public class Maze extends JPanel implements Runnable{
 		Integer cell = 0;
 		for(int x = 0; x < _numColumns+2; x++){
 			for(int y = 0; y < _numRows+2;y++){
+				cell = 0;
+				if(this._startCell.x == x && this._startCell.y == y){
+					cell += 32;
+				}
+				if(this._endCell.x == x && this._endCell.y == y){
+					cell += 16;
+				}
 				if(this._northWalls[x][y]){
 					cell += NORTH;
 				}
@@ -165,8 +180,9 @@ public class Maze extends JPanel implements Runnable{
 				if(this._westWalls[x][y]){
 					cell += WEST;
 				}
+				sb.append(cell.toString());
 				if (y < _numColumns + 1){
-					sb.append(cell.toString());
+					sb.append(",");
 				}
 			}
 			if ( x < _numColumns + 1){
@@ -176,7 +192,69 @@ public class Maze extends JPanel implements Runnable{
 		Base64.Encoder e = Base64.getEncoder();
 		return e.encodeToString(sb.toString().getBytes());
 	}
-
+	public void build_MazeFromBytes(){
+		Base64.Decoder d = Base64.getDecoder();
+		String decodedMazeString="";
+		
+		_decodedMazeBytes = d.decode(_encodedMazeBytes);
+		try {
+			decodedMazeString = new String(_decodedMazeBytes,"UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		String[] rows;
+		String[] cols;
+		rows = decodedMazeString.split("\\.");
+		cols = rows[0].split(",");
+		resetMaze(rows.length-2,cols.length-2);
+		for(int x = 0; x < rows.length; x++){
+			cols = rows[x].split(",");
+			for(int y = 0; y < cols.length; y++){
+				int val = new Integer(cols[y]);  
+				if(val - 32 >= 0){
+					this._startCell = new Point(x,y);
+					val -= 32;
+				}
+				if(val - 16 >= 0){
+					this._endCell = new Point(x,y);
+					val -= 16;
+				}
+				if (val - WEST >= 0){
+					_westWalls[x][y] = true;
+					val -= WEST;
+				}else{
+					_westWalls[x][y] = false;
+				}
+				if (val - SOUTH >= 0){
+					_southWalls[x][y] = true;
+					val -= SOUTH;
+				}else{
+					_southWalls[x][y] = false;
+				}
+				
+				if (val - EAST >= 0){
+					_eastWalls[x][y] = true;
+					val -= EAST;
+				}else{
+					_eastWalls[x][y] = false;
+				}
+				
+				if (val - NORTH == 0){
+					_northWalls[x][y] = true;
+					val -= NORTH;
+				}else{
+					_northWalls[x][y] = false;
+				}
+				repaint();
+				try{
+					Thread.sleep(5);//1000/1000);
+				}catch(InterruptedException ie){
+					isRunning = false;
+				}
+			}
+		}
+	}
 	public int get_numColumns() {
 		return _numColumns;
 	}
@@ -456,7 +534,7 @@ public class Maze extends JPanel implements Runnable{
 		}// end While Stack
 	}
 	/**
-	 * Initialize the maze.
+	 * Initialize the maze.t
 	 */
 	private void initialize(){
 		initializeBorder();
@@ -559,9 +637,13 @@ public class Maze extends JPanel implements Runnable{
 	 * Build the Maze
 	 */
 	public void run(){
-		generate();
-		_startCell = new Point(1,1);
-		_endCell = getEndPoint();
+		if(_encodedMazeBytes == null){
+			generate();
+			_startCell = new Point(1,1);
+			_endCell = getEndPoint();
+		}else{
+			this.build_MazeFromBytes();
+		}
 		repaint();
 		this.notifyListeners();
 	}

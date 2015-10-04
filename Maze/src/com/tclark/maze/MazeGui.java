@@ -32,7 +32,9 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 	private String FILEPATH = "c:\\temp\\maze";
 	private String FILENAME = "maze";
 	private final String FILEEXT = "png";
-	
+	private String _MazeSpecFile = "";
+
+	byte[] _MazeBytes;
 	private Maze _Maze;
 	MazeSolver _MazeSolver; 
 	private Thread _thMaze;
@@ -102,14 +104,32 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 	}
 	public void setMazeRunning(boolean isRunning){
 		if(isRunning){
-			_Maze.resetMaze(this._iColumns, this._iRows);
-			_MazeSolver.reset();
-			_miGameRun.setEnabled(false);
-			_miGameStop.setEnabled(true);
-			_Maze.setRunning(true);
-			_Maze.addListener(this);
-			_thMaze = new Thread(_Maze);
-			_thMaze.start();
+			if(this._MazeSpecFile.trim() == ""){
+				_Maze.resetMaze(this._iColumns, this._iRows);
+				_MazeSolver.reset();
+				_miGameRun.setEnabled(false);
+				_miGameStop.setEnabled(true);	
+				_Maze.setRunning(true);
+				_Maze.addListener(this);
+				_thMaze = new Thread(_Maze);
+				_thMaze.start();
+			}else{
+				_Maze.set_encodedMazeBytes(_MazeBytes);
+				_MazeSolver.reset();
+				_miGameRun.setEnabled(false);
+				_miGameStop.setEnabled(true);	
+				_Maze.addListener(this);
+				_Maze.setRunning(true);
+				_thMaze = new Thread(_Maze);
+				_thMaze.start();				
+				//_Maze.build_MazeFromString(_MazeString);
+//				_miGameRun.setEnabled(false);
+//				_miGameStop.setEnabled(true);	
+//				_Maze.setRunning(true);
+//				_Maze.addListener(this);
+//				_thMaze = new Thread(_Maze);
+//				_thMaze.start();
+			}
 			
 		}else{
 			_miGameRun.setEnabled(true);
@@ -126,12 +146,12 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 		}else if (ae.getSource().equals(this._miFileOptions)){
 			final JFrame frmOptions = new JFrame();
 			frmOptions.setTitle("Options");
-			frmOptions.setSize(300,160);
+			frmOptions.setSize(300,210);
 			frmOptions.setLocation((Toolkit.getDefaultToolkit().getScreenSize().width - frmOptions.getWidth())/2,
 					               (Toolkit.getDefaultToolkit().getScreenSize().height - frmOptions.getHeight())/2);
 			frmOptions.setResizable(false);
 			JPanel pnlOptions = new JPanel();
-			pnlOptions.setLayout(new GridLayout(4,2));
+			pnlOptions.setLayout(new GridLayout(5,2));
 			pnlOptions.setOpaque(false);
 			frmOptions.add(pnlOptions);
 			lblTemp = new JLabel("Number of Columns:");
@@ -183,6 +203,37 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 			pnlFileChooser.add(btnFileChooser);
 			btnFileChooser.setPreferredSize(new Dimension(19,19));
 			pnlOptions.add(pnlFileChooser);
+			
+			pnlOptions.add(new JLabel("Maze Specification:"));
+			JTextField txtMazeSpec = new JTextField();
+			txtMazeSpec.setText(_MazeSpecFile);
+			txtMazeSpec.setPreferredSize(new Dimension(115,20));
+			JPanel pnlMazeFileChooser = new JPanel(new FlowLayout());
+			pnlMazeFileChooser.add(txtMazeSpec);
+			JButton btnMazeFileChooser = new JButton("...");
+			btnMazeFileChooser.addActionListener(new ActionListener(){
+				@Override
+				public void actionPerformed(ActionEvent ae){
+					JFileChooser fileChooser = new JFileChooser();
+					fileChooser.setFileSelectionMode( JFileChooser.FILES_ONLY);
+					fileChooser.setCurrentDirectory(new File(FILEPATH));
+					fileChooser.setVisible(true);
+					fileChooser.showDialog(null, "Select Maze File");
+					_MazeSpecFile = fileChooser.getSelectedFile().getPath();
+					txtMazeSpec.setText(_MazeSpecFile);	
+					File in = new File(_MazeSpecFile);
+					try {
+						_MazeBytes = Files.readAllBytes(in.toPath());
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						_Maze.set_encodedMazeBytes(null);
+					}
+				}
+			});
+			pnlMazeFileChooser.add(btnMazeFileChooser);
+			btnMazeFileChooser.setPreferredSize(new Dimension(19,19));
+			pnlOptions.add(pnlMazeFileChooser);
+			
 			pnlOptions.add(new JLabel());
 			JButton btnOk = new JButton();
 			btnOk.setText("Okay");
@@ -190,6 +241,7 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 				@Override
 				public void actionPerformed(ActionEvent ae){
 					frmOptions.dispose();
+					//_Maze.resetMaze(_iColumns, _iRows);
 				}
 			});
 			pnlOptions.add(btnOk);
@@ -198,6 +250,7 @@ public class MazeGui extends JFrame implements ActionListener, TaskListener{
 			setMazeRunning(true);
 		}else if(ae.getSource().equals(this._miGameReset)){
 			this._Maze.resetMaze(this._iColumns, this._iRows);
+			_MazeSolver.reset();
 		}else if(ae.getSource().equals(this._miGameStop)){
 			setMazeRunning(false);
 		}else if(ae.getSource().equals(this._miFileSave)){

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Random;
 
 import javax.swing.JLayeredPane;
 import javax.swing.JPanel;
@@ -12,8 +13,8 @@ import javax.swing.JPanel;
 public  class MazeSolver extends JPanel implements Runnable{
 	private Maze _maze;
 	private int[][] _direction;
-	
-	
+
+
 	/** 
 	 * Value representing the North or Up direction
 	 */
@@ -74,54 +75,68 @@ public  class MazeSolver extends JPanel implements Runnable{
 
 	public MazeSolver(Maze maze){
 		_maze = maze;
+		_direction = new int[_maze.get_numColumns()+2][_maze.get_numRows()+2];
 	}
 	private void solve(){
-		_maze.initializeVisitCount();
-		_direction = new int[_maze.get_numColumns()+2][_maze.get_numRows()+2];
-
+		this.reset();
 	}
 	public void reset(){
-		_maze.initializeVisitCount();
+		_maze.initializeVisitCount();	
+		this.initializeDirectionList();
+	}
+	private void initializeDirectionList(){
 		_direction = new int[_maze.get_numColumns()+2][_maze.get_numRows()+2];
-		
+		for(int x = 1; x < _maze.get_numColumns()+1; x++){
+			for(int y = 1; y < _maze.get_numRows()+1;y++){
+				_maze.increment_visitCount(x,y);
+				_direction[x][y] = 0;
+				repaint();
+			}
+		}
+
 	}
 	public void run(){
-		_direction = new int[_maze.get_numColumns()+2][_maze.get_numRows()+2];
-		solve();
+		//solve();
+		this.reset();
+		testVisitCount();
 		repaint();
 		this.notifyListeners();
 	}
 	public void testVisitCount(){
+		Random r = new Random();
 		for(int x = 1; x < _maze.get_numColumns()+1; x++){
 			for(int y = 1; y < _maze.get_numRows()+1;y++){
 				_maze.increment_visitCount(x,y);
+				_direction[x][y] = r.nextInt(3);
 				repaint();
 			}
 		}
 	}	
-			@Override
+	@Override
 	public void paintComponent(Graphics g){
 		super.paintComponent(g);
 		for(int x = 1; x < _maze.get_numColumns()+1; x++){
 			for(int y = 1; y < _maze.get_numRows()+1;y++){
 				if(_maze.get_visitCount(x, y) == 1)
-				g.setColor(Color.BLUE);
+					g.setColor(Color.BLUE);
 				if(_maze.get_visitCount(x,y) == 2)
 					g.setColor(Color.MAGENTA);
 				int row = (int) (_maze.get_borderY() + (y * _maze.get_cellHeight() ) + (1.5* _maze.get_cellHeight()));
 				int col = _maze.get_borderX() + (x * _maze.get_cellWidth()) + _maze.get_cellWidth()/2;
-				if(_direction[x][y] == 1 || _direction[x][y] == 3){
-					if (x!=_maze.get_numColumns()){
-						g.fillRect(col,	row,_maze.get_cellWidth(), _maze.get_cellHeight()/6);			
+				try{
+					if(_direction[x][y] == 1 || _direction[x][y] == 3){
+						if (x!=_maze.get_numColumns()){
+							g.fillRect(col,	row,_maze.get_cellWidth(), _maze.get_cellHeight()/6);			
+						}
 					}
-				}
+					if(_direction[x][y] == 2 || _direction[x][y] == 3){
+						if(y!=_maze.get_numRows()){
+							g.fillRect(col,row,_maze.get_cellWidth()/6, _maze.get_cellHeight());
+						}
+					}
+				}catch (java.lang.ArrayIndexOutOfBoundsException ae){
+					//ae.printStackTrace();
 
-				//row = _maze.get_borderY() + (y * _maze.get_cellHeight()) + _maze.get_cellHeight()/2;
-				//col = _maze.get_borderX() + (x * _maze.get_cellWidth()) + _maze.get_cellWidth()/2 + _maze.get_cellWidth();
-				if(_direction[x][y] == 2 || _direction[x][y] == 3){
-					if(y!=_maze.get_numRows()){
-						g.fillRect(col,row,_maze.get_cellWidth()/6, _maze.get_cellHeight());
-					}
 				}
 			}
 		}
@@ -140,5 +155,5 @@ public  class MazeSolver extends JPanel implements Runnable{
 		return al;
 	}
 
-	
+
 }
